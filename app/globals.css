@@ -116,6 +116,12 @@ main {
   margin-top: 12px;
 }
 
+.context-rider {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 .context-item {
   display: grid;
   gap: 4px;

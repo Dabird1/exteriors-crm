@@ -32,6 +32,8 @@ The architecture direction is documented in [docs/architecture.md](docs/architec
 - `docs/`
   Product, architecture, and design guidance
 
+The shell is organized around a shared Infinity platform experience with brand-aware context, not separate per-brand applications.
+
 ## Included Placeholder Modules
 
 - Dashboard
@@ -88,6 +90,13 @@ If you are using Prisma migrations locally, run `npm run prisma:migrate`.
 - seed realistic platform, brand, office, and user demo data
 - build the Leads workflow around prospect, gross lead, and qualified lead stages
 - add auth and scoped access handling
+
+## Current Scaffold Highlights
+
+- tenant-aware starter schema for platform, brand, office, users, and funnel records
+- Infinity-first shell with placeholder context switching
+- role-aware navigation for platform admins, brand leaders, and reps
+- platform-shaped placeholder modules for reporting, leads, appointments, and admin
 
 ## Notes
 

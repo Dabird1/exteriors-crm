@@ -13,6 +13,7 @@ export default function DashboardPage() {
           "Add KPI summary cards for prospect, gross lead, and qualified lead",
           "Add appointment set, cancelled, and demoed reporting",
           "Add platform-to-brand drill-down patterns",
+          "Keep one shared KPI definition layer for all 25 brands",
         ]}
       />
     </AppShell>

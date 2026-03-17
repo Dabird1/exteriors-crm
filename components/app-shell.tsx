@@ -21,6 +21,9 @@ export function AppShell({
   const visibleNav = primaryNav.filter((item) =>
     roleNavMap[role].includes(item.title),
   );
+  const activeContext =
+    demoContexts.find((context) => context.label === activeContextLabel) ??
+    demoContexts[0];
 
   return (
     <main className="app-shell">
@@ -40,6 +43,7 @@ export function AppShell({
             <span>{activeContextLabel}</span>
             <span className="context-muted">Switch brand</span>
           </button>
+          <p className="context-rider">{activeContext.rider}</p>
           <div className="context-list">
             {demoContexts.map((context) => (
               <div
@@ -79,7 +83,9 @@ export function AppShell({
             <p className="panel-label">Infinity Platform Shell</p>
             <h2 className="topbar-title">{activeContextLabel}</h2>
           </div>
-          <div className="topbar-badge">Brand rider placeholder</div>
+          <div className="topbar-badge">
+            {roleProfiles[role].homeLabel} | {activeContext.rider}
+          </div>
         </header>
         {children}
       </section>

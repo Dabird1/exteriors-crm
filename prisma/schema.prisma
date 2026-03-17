@@ -110,6 +110,8 @@ model BrandTenant {
   activities     Activity[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([platformId, active])
 }
 
 model Office {
@@ -131,6 +133,8 @@ model Office {
   activities     Activity[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([brandTenantId, active])
 }
 
 model User {
@@ -154,6 +158,8 @@ model User {
   activities        Activity[]
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
+
+  @@index([brandTenantId, officeId, role])
 }
 
 model Campaign {
@@ -169,6 +175,8 @@ model Campaign {
   leads          Lead[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([brandTenantId, active])
 }
 
 model Contact {
@@ -184,6 +192,8 @@ model Contact {
   leads          Lead[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([brandTenantId, lastName])
 }
 
 model Property {
@@ -203,6 +213,8 @@ model Property {
   jobs             Job[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
+
+  @@index([brandTenantId, postalCode])
 }
 
 model Prospect {
@@ -229,6 +241,8 @@ model Prospect {
   lead           Lead?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@index([platformId, brandTenantId, officeId, status])
 }
 
 model Lead {
@@ -261,6 +275,8 @@ model Lead {
   opportunities    Opportunity[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+
+  @@index([platformId, brandTenantId, officeId, lifecycleStage, status])
 }
 
 model Appointment {
@@ -284,6 +300,8 @@ model Appointment {
   opportunities  Opportunity[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+
+  @@index([brandTenantId, officeId, status, scheduledAt])
 }
 
 model Opportunity {
@@ -308,6 +326,8 @@ model Opportunity {
   jobs           Job[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
+
+  @@index([brandTenantId, officeId, stage])
 }
 
 model Job {
@@ -329,6 +349,8 @@ model Job {
   owner          User?         @relation("JobOwner", fields: [ownerUserId], references: [id])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([brandTenantId, officeId, status])
 }
 
 model Activity {
@@ -347,4 +369,6 @@ model Activity {
   office           Office?      @relation(fields: [officeId], references: [id])
   user             User         @relation(fields: [userId], references: [id])
   createdAt        DateTime     @default(now())
+
+  @@index([brandTenantId, officeId, activityType, createdAt])
 }

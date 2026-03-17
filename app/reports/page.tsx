@@ -13,6 +13,7 @@ export default function ReportsPage() {
           "Standardize metric definitions in one reporting layer",
           "Add platform, brand, office, and rep views",
           "Prepare live query-based KPI cards for MVP",
+          "Keep funnel logic auditable with timestamped status changes",
         ]}
       />
     </AppShell>

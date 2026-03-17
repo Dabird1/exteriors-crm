@@ -70,14 +70,17 @@ export const roleProfiles = {
   platform_admin: {
     label: "Platform Admin",
     guidance: "Oversees Infinity standards, brands, reporting, and KPI logic.",
+    homeLabel: "Platform roll-up",
   },
   brand_leader: {
     label: "Brand Leader",
     guidance: "Runs local brand performance, offices, and team execution.",
+    homeLabel: "Brand execution",
   },
   rep: {
     label: "Rep",
     guidance: "Works assigned leads, appointments, opportunities, and jobs.",
+    homeLabel: "Field workflow",
   },
 } as const;
 
@@ -85,13 +88,16 @@ export const demoContexts = [
   {
     label: "Infinity Platform",
     detail: "All 25 brands",
+    rider: "Shared standards and KPI logic",
   },
   {
     label: "North Crest Roofing",
     detail: "Brand workspace",
+    rider: "Premium exterior solutions",
   },
   {
     label: "North Crest Roofing / Tampa",
     detail: "Office workspace",
+    rider: "Local sales and appointment execution",
   },
 ] as const;

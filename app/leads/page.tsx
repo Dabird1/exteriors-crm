@@ -13,6 +13,7 @@ export default function LeadsPage() {
           "Show prospect and lead lifecycle clearly",
           "Support owner assignment by office and rep",
           "Prepare lead detail for appointment scheduling",
+          "Preserve campaign and source fields for future marketing automation",
         ]}
       />
     </AppShell>
