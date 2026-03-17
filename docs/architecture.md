@@ -1,60 +1,81 @@
-# Exteriors CRM Architecture
+# Infinity Home Services CRM Platform Architecture
 
-## Goals
+## Architecture Goals
 
-The architecture should optimize for:
-- fast MVP delivery
-- low operational overhead
-- strong TypeScript support
-- easy local development
-- a clean path to grow without a rewrite
+The architecture should support:
+- one shared platform for Infinity Home Services
+- around 25 brands in the current operating model
+- centralized reporting with brand-level execution
+- very simple user experience despite multi-tenant complexity
+- fast MVP delivery without locking the team into a rewrite later
 
-## Recommended Stack
+## Recommended Architecture Direction
 
-The best fit for this project is:
+Use a shared application and shared database with tenant-aware data boundaries.
 
-- Frontend and backend: Next.js with TypeScript
-- UI: React with a lightweight component approach
-- Database: PostgreSQL
-- ORM: Prisma
-- Auth: Clerk or Supabase Auth
-- Storage: Supabase Storage or S3-compatible object storage
-- Deployment: Vercel for the app, managed Postgres for data
+This means:
+- one codebase
+- one deployed application
+- one primary relational database
+- tenant-aware tables keyed by platform, brand, and office scope where appropriate
+- role-aware routing and dashboards within the same product shell
 
-### Why this stack
+This is the right MVP balance because it keeps the system simple to build and operate while still supporting the Infinity multi-brand model.
 
-This stack is fast to build with, widely adopted, and simple for a small team. It keeps one TypeScript codebase for UI and server logic, gives a strong developer experience, and can scale comfortably through MVP and early growth.
+## Tenant Model
+
+### Recommended Shape
+
+- one `platform` record for Infinity Home Services
+- many `brand_tenant` records under the platform
+- many `office` records under each brand
+- users scoped to platform, brand, or office access
+
+### Why this model works
+
+- platform leadership gets roll-up visibility
+- brand teams retain local operational context
+- the app can keep shared workflows and reporting standards
+- the team avoids the cost and complexity of separate deployments per brand
+
+### What to avoid
+
+- one database per brand in MVP
+- one deployed app per brand in MVP
+- highly customized workflow logic per tenant
+- custom schema branching per brand
 
 ## Frontend
 
 ### Recommendation
 
-Use Next.js App Router with TypeScript.
+Continue with Next.js App Router and TypeScript in a single application shell.
 
-### Why
+### Frontend responsibilities
 
-- supports fast iteration for both web app pages and server actions
-- keeps routing, layouts, and data-loading patterns organized
-- works well for mobile-friendly internal tools
-- minimizes project setup and integration overhead
+- render the Infinity platform shell
+- show tenant-aware branding in context
+- adapt navigation by role and access scope
+- keep module screens simple and field-friendly
+- support fast drill-down from platform to brand to office to rep
 
-### Frontend Structure
+### Branding model
 
-A practical app structure would be:
+The shell should be Infinity-led, not brand-fragmented.
 
-- `app/`
-- `components/`
-- `lib/`
-- `prisma/`
-- `public/`
-- `styles/`
+Recommended behavior:
+- global shell always feels like one Infinity platform
+- active brand context swaps in brand logo and rider content
+- branding fields come from tenant metadata, not hard-coded themes
+- keep theming shallow in MVP: logo, rider, and a small color accent set
 
-### UI Guidance
+### UX structure
 
-- prioritize forms, lists, detail views, and timelines over flashy UI
-- design for tablet and phone usage first, then desktop enhancement
-- keep navigation shallow and business-oriented
-- use server-rendered pages where possible and client components only where needed
+Keep the interface consistent across all roles:
+- top-level context indicator for current scope
+- shallow left navigation
+- primary dashboard page by role
+- fast access to leads, appointments, opportunities, and jobs
 
 ## Backend
 
@@ -63,210 +84,237 @@ A practical app structure would be:
 Keep the backend inside the Next.js application for MVP.
 
 Use:
-- route handlers for API endpoints
-- server actions where they simplify form-driven workflows
-- a service layer in `lib/` for business logic
+- route handlers for APIs where needed
+- server actions for form-heavy workflows
+- a clean service layer for tenant-aware business logic
 
-### Why
+### Backend responsibilities
 
-- avoids maintaining a separate API server too early
-- keeps deployment and local setup simple
-- reduces duplicated types and API contracts
+- enforce platform, brand, and office scoping
+- apply role-based permissions
+- manage workflow transitions
+- compute reporting roll-ups
+- keep funnel definitions consistent across the platform
 
-### Backend Responsibilities
+### Tenant-aware business logic
 
-- CRUD for leads, contacts, properties, inspections, opportunities, jobs, and activities
-- auth checks and role-based access
-- dashboard aggregations
-- file upload coordination
-- validation and workflow transitions
+The backend should always know:
+- who the user is
+- what scope they are acting in
+- what tenant boundaries apply
+
+This logic should live in shared services and authorization helpers, not scattered throughout UI components.
 
 ## Database
 
 ### Recommendation
 
-Use PostgreSQL with Prisma.
+Use PostgreSQL with Prisma and a shared schema.
 
-### Why
+### Core design rule
 
-- relational data fits the CRM domain well
-- Prisma accelerates schema changes and query development
-- Postgres scales well for this workload and is easy to host in managed environments
+Most operational tables should include:
+- `platform_id` when records must support direct platform roll-up
+- `brand_tenant_id`
+- `office_id` where office-level reporting matters
 
-### Database Design Principles
+Not every table must carry every scope field, but reporting-critical entities should carry enough scope to avoid fragile joins and ambiguous ownership.
 
-- use normalized core entities
-- keep audit-friendly timestamps on all major records
-- use enums carefully for statuses that are unlikely to change often
-- prefer explicit foreign keys over polymorphic complexity except where a simple activity pattern justifies it
+### Recommended core entities
 
-### Initial Core Tables
+- platform
+- brand_tenant
+- office
+- user
+- prospect
+- contact
+- property
+- lead
+- appointment
+- opportunity
+- job
+- activity
+- campaign
 
-- users
-- leads
-- contacts
-- properties
-- inspections
-- opportunities
-- jobs
-- activities
+### Reporting-ready modeling guidance
+
+- standardize funnel stage enums or controlled reference tables
+- store appointment outcomes explicitly
+- preserve timestamps for stage-changing events
+- keep source and campaign attribution structured
+- avoid making reporting depend on free-text fields
+- model prospect state explicitly in data or lifecycle logic so early-funnel reporting stays trustworthy
+
+### Marketing-automation readiness
+
+The MVP does not need automation workflows yet, but the model should be ready for them.
+
+Add support for:
+- prospect intake channel
+- lead source
+- source detail
+- campaign linkage
+- lifecycle stage
+- status timestamps where meaningful
+
+That gives a clean base for future nurture, attribution, and conversion analysis.
 
 ## Auth
 
 ### Recommendation
 
-Use Clerk if the priority is the fastest polished auth setup.
+Use Clerk for authentication speed, but keep authorization in the app database.
 
-Use Supabase Auth if you want tighter bundling with database and storage.
+### Why
 
-### Preferred Choice
+- fastest route to secure sign-in and session management
+- easy support for internal users across many brands
+- lower maintenance than building auth from scratch
 
-Clerk is the best default recommendation for fast development because it simplifies login, session management, protected routes, and user management with minimal setup.
+### Authorization model
 
-### MVP Auth Requirements
+Store user role and scope in the application database.
 
-- email/password or magic link sign-in
-- protected app routes
-- role assignment for sales rep, office admin, and manager
-- simple user activation/deactivation
+Recommended access dimensions:
+- role: platform admin, brand manager, office manager, sales rep
+- scope level: platform, brand, office
+- scope ids: brand tenant id and optional office id
 
-For authorization, store the app role in the database and enforce it in server-side business logic.
+This keeps permissions practical without building a heavy policy system.
 
 ## Storage
 
 ### Recommendation
 
-Use Supabase Storage first unless the team already has AWS preferences.
+Use Supabase Storage or S3-compatible storage behind a simple abstraction layer.
 
-### Why
+### MVP use cases
 
-- simple setup
-- low operational burden
-- works well for inspection photos and attachments
-- easy to replace later with S3-compatible storage if needed
+- logo files for brands
+- appointment or property photos
+- estimate and job attachments
 
-### MVP Storage Use Cases
+Keep file references tenant-aware so uploads can be partitioned by brand and office where useful.
 
-- inspection photos
-- estimate attachments
-- basic job documents
+## Reporting and Dashboard Architecture
 
-Keep storage concerns isolated behind helper functions so the app is not tightly coupled to one provider.
+### Recommended hierarchy
+
+1. Platform dashboard
+2. Brand dashboard
+3. Office dashboard
+4. Rep dashboard
+
+### Recommended reporting approach
+
+For MVP:
+- start with live query-based reporting for current-period dashboards
+- create reusable aggregation queries by scope
+- keep metric definitions centralized in code and docs
+
+For later:
+- add summary tables or scheduled aggregation jobs only when performance requires them
+
+### Core metric groups
+
+- prospect counts
+- gross lead counts
+- qualified lead counts
+- lead-to-appointment conversion
+- appointments set
+- appointments cancelled
+- demoed appointments
+- opportunity pipeline counts
+- sold jobs and sold value
+
+### KPI logic guidance
+
+For MVP:
+- define one shared source of truth for each metric in application logic
+- use the same metric definitions at every reporting scope
+- avoid tenant-specific KPI formulas
+- keep the first reporting layer query-driven and understandable
+
+Later:
+- move repeated calculations into summary tables only when dashboard performance requires it
 
 ## Local Development Setup
 
 ### Recommendation
 
-Use a straightforward local setup:
+Keep local development straightforward:
 
-- Node.js LTS
-- `npm` for package management
+- Next.js app
+- Prisma
 - local `.env`
-- Prisma migrations
-- local Next.js app
-- either local Postgres via Docker or a managed dev database
+- local or managed development Postgres
 
-### Suggested Developer Flow
+### Suggested setup
 
-1. Install dependencies.
-2. Copy `.env.example` to `.env`.
-3. Start or connect to Postgres.
-4. Run Prisma migrations.
-5. Seed basic users and statuses if needed.
+1. Install app dependencies.
+2. Configure `.env`.
+3. Connect to a Postgres database.
+4. Run Prisma generate and migrations.
+5. Seed a small sample data set with one platform, a few brands, offices, managers, and reps.
 6. Start the Next.js dev server.
 
-### Initial Files to Add
+### Why this matters
 
-- `package.json`
-- `tsconfig.json`
-- `.gitignore`
-- `.env.example`
-- `next.config.ts`
-- `prisma/schema.prisma`
+Multi-tenant software becomes much easier to reason about when local seed data includes realistic scope examples.
 
 ## Deployment Recommendation
 
-### Best MVP Deployment
+### MVP recommendation
 
-- App: Vercel
-- Database: Neon or Supabase Postgres
-- Storage: Supabase Storage
-- Auth: Clerk
+- app on Vercel
+- Postgres on Neon or Supabase
+- auth with Clerk
+- storage with Supabase Storage or S3-compatible storage
 
 ### Why
 
-- lowest friction for shipping quickly
-- excellent support for Next.js
-- minimal DevOps burden
-- easy preview deployments for iterative product work
-
-### Scaling Path
-
-This setup can comfortably support MVP and early production. If scale or customization needs grow later, the database can remain Postgres while the app can evolve into separate services only when justified by actual complexity.
+- fast deployment cycle
+- low DevOps burden
+- strong support for a TypeScript monolith
+- simple path to preview environments and staged rollout
 
 ## Tradeoffs
 
-### Next.js Monolith
+### Shared app and shared database
 
 Pros:
-- fast to build
-- single codebase
-- shared types across frontend and backend
-- easier onboarding
+- fastest to build and maintain
+- easiest way to support standardized reporting
+- lower operational cost
 
 Cons:
-- can become messy if business logic is not kept organized
-- less separation than a dedicated API service
+- tenant isolation depends on application discipline
+- reporting queries must be designed carefully from the start
 
-### Prisma
+### Separate tenant infrastructure
 
 Pros:
-- fast schema iteration
-- strong TypeScript ergonomics
-- developer-friendly migrations
+- stronger isolation
+- more tenant-specific customization
 
 Cons:
-- some advanced SQL patterns may eventually need raw queries
+- much more operational overhead
+- harder platform-wide reporting
+- unnecessary complexity for MVP
 
-### Clerk
+### Recommendation
 
-Pros:
-- quickest route to production-ready auth
-- polished user/session flows
-- less auth maintenance
+Choose the shared platform model now. Add stronger isolation patterns later only if customer count, compliance needs, or brand customization actually require it.
 
-Cons:
-- adds a third-party dependency
-- some teams prefer all-in-one auth inside their database platform
+## Practical MVP Recommendation
 
-### Supabase Storage
+Build the first version as:
 
-Pros:
-- simple and practical
-- good fit for MVP file handling
-- lower setup overhead than full AWS
+- one Next.js application
+- one shared Postgres database
+- tenant-aware Prisma schema
+- centralized metric definitions
+- Infinity-led shell with brand context support
+- role-based navigation and dashboards
 
-Cons:
-- less flexible than a custom storage stack
-- teams already invested in AWS may prefer S3 directly
-
-## What to Avoid Right Now
-
-- separate frontend and backend repos
-- microservices
-- event buses or queue-heavy design before proven need
-- overly abstract domain layers
-- premature multi-tenant architecture
-- heavy admin frameworks that constrain the product UX
-
-## Practical Recommendation
-
-If we were starting implementation next, I would build:
-
-- Next.js + TypeScript app
-- Prisma + Postgres data layer
-- Clerk for auth
-- Supabase Storage for files
-- Vercel deployment
-
-That gives the fastest path to a clean MVP while keeping a solid scaling path for future modules and higher usage.
+This keeps the first version practical while leaving a clean path for future scale, automation, and richer tenant capabilities.

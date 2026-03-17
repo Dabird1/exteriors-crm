@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PLATFORM_ADMIN
+  BRAND_LEADER
+  OFFICE_MANAGER
+  SALES_REP
+}
+
+enum ScopeLevel {
+  PLATFORM
+  BRAND
+  OFFICE
+}
+
+enum ProspectStatus {
+  NEW
+  REVIEWING
+  PROMOTED
+  DISQUALIFIED
+}
+
+enum LeadLifecycleStage {
+  PROSPECT
+  GROSS_LEAD
+  QUALIFIED_LEAD
+  OPPORTUNITY
+  CUSTOMER
+}
+
+enum LeadStatus {
+  OPEN
+  WORKING
+  APPOINTMENT_SET
+  NURTURING
+  CLOSED
+}
+
+enum AppointmentStatus {
+  SET
+  CANCELLED
+  DEMOED
+  NO_SHOW
+}
+
+enum OpportunityStage {
+  OPEN
+  PROPOSAL
+  NEGOTIATING
+  WON
+  LOST
+}
+
+enum JobStatus {
+  PENDING
+  READY
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  TEXT
+  TASK
+  STATUS_CHANGE
+}
+
+model Platform {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  active       Boolean       @default(true)
+  brandTenants BrandTenant[]
+  campaigns    Campaign[]
+  prospects    Prospect[]
+  leads        Lead[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model BrandTenant {
+  id             String        @id @default(cuid())
+  platformId     String
+  name           String
+  slug           String        @unique
+  legalName      String?
+  logoUrl        String?
+  riderText      String?
+  primaryColor   String?
+  active         Boolean       @default(true)
+  platform       Platform      @relation(fields: [platformId], references: [id])
+  offices        Office[]
+  users          User[]
+  contacts       Contact[]
+  properties     Property[]
+  campaigns      Campaign[]
+  prospects      Prospect[]
+  leads          Lead[]
+  appointments   Appointment[]
+  opportunities  Opportunity[]
+  jobs           Job[]
+  activities     Activity[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Office {
+  id             String        @id @default(cuid())
+  brandTenantId  String
+  name           String
+  code           String?
+  timezone       String?
+  active         Boolean       @default(true)
+  city           String?
+  state          String?
+  brandTenant    BrandTenant   @relation(fields: [brandTenantId], references: [id])
+  users          User[]
+  prospects      Prospect[]
+  leads          Lead[]
+  appointments   Appointment[]
+  opportunities  Opportunity[]
+  jobs           Job[]
+  activities     Activity[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model User {
+  id                String         @id @default(cuid())
+  brandTenantId     String?
+  officeId          String?
+  firstName         String
+  lastName          String
+  email             String         @unique
+  role              UserRole
+  scopeLevel        ScopeLevel
+  title             String?
+  active            Boolean        @default(true)
+  brandTenant       BrandTenant?   @relation(fields: [brandTenantId], references: [id])
+  office            Office?        @relation(fields: [officeId], references: [id])
+  ownedProspects    Prospect[]     @relation("ProspectOwner")
+  ownedLeads        Lead[]         @relation("LeadOwner")
+  assignedAppointments Appointment[] @relation("AppointmentAssignee")
+  ownedOpportunities Opportunity[] @relation("OpportunityOwner")
+  ownedJobs         Job[]          @relation("JobOwner")
+  activities        Activity[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model Campaign {
+  id             String        @id @default(cuid())
+  platformId     String
+  brandTenantId  String
+  name           String
+  channel        String?
+  active         Boolean       @default(true)
+  platform       Platform      @relation(fields: [platformId], references: [id])
+  brandTenant    BrandTenant   @relation(fields: [brandTenantId], references: [id])
+  prospects      Prospect[]
+  leads          Lead[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Contact {
+  id             String        @id @default(cuid())
+  brandTenantId  String
+  firstName      String
+  lastName       String
+  primaryPhone   String?
+  email          String?
+  brandTenant    BrandTenant   @relation(fields: [brandTenantId], references: [id])
+  properties     Property[]
+  prospects      Prospect[]
+  leads          Lead[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Property {
+  id               String        @id @default(cuid())
+  brandTenantId    String
+  primaryContactId String?
+  addressLine1     String
+  city             String
+  state            String
+  postalCode       String
+  brandTenant      BrandTenant   @relation(fields: [brandTenantId], references: [id])
+  primaryContact   Contact?      @relation(fields: [primaryContactId], references: [id])
+  prospects        Prospect[]
+  leads            Lead[]
+  appointments     Appointment[]
+  opportunities    Opportunity[]
+  jobs             Job[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Prospect {
+  id             String         @id @default(cuid())
+  platformId     String
+  brandTenantId  String
+  officeId       String?
+  ownerUserId    String?
+  contactId      String?
+  propertyId     String?
+  campaignId     String?
+  intakeChannel  String?
+  source         String?
+  sourceDetail   String?
+  status         ProspectStatus @default(NEW)
+  notes          String?
+  platform       Platform       @relation(fields: [platformId], references: [id])
+  brandTenant    BrandTenant    @relation(fields: [brandTenantId], references: [id])
+  office         Office?        @relation(fields: [officeId], references: [id])
+  owner          User?          @relation("ProspectOwner", fields: [ownerUserId], references: [id])
+  contact        Contact?       @relation(fields: [contactId], references: [id])
+  property       Property?      @relation(fields: [propertyId], references: [id])
+  campaign       Campaign?      @relation(fields: [campaignId], references: [id])
+  lead           Lead?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Lead {
+  id               String             @id @default(cuid())
+  platformId       String
+  brandTenantId    String
+  officeId         String?
+  ownerUserId      String?
+  prospectId       String?            @unique
+  contactId        String?
+  propertyId       String?
+  campaignId       String?
+  leadNumber       String?            @unique
+  lifecycleStage   LeadLifecycleStage @default(GROSS_LEAD)
+  status           LeadStatus         @default(OPEN)
+  qualification    String?
+  source           String?
+  sourceDetail     String?
+  serviceType      String?
+  nextActionAt     DateTime?
+  platform         Platform           @relation(fields: [platformId], references: [id])
+  brandTenant      BrandTenant        @relation(fields: [brandTenantId], references: [id])
+  office           Office?            @relation(fields: [officeId], references: [id])
+  owner            User?              @relation("LeadOwner", fields: [ownerUserId], references: [id])
+  prospect         Prospect?          @relation(fields: [prospectId], references: [id])
+  contact          Contact?           @relation(fields: [contactId], references: [id])
+  property         Property?          @relation(fields: [propertyId], references: [id])
+  campaign         Campaign?          @relation(fields: [campaignId], references: [id])
+  appointments     Appointment[]
+  opportunities    Opportunity[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model Appointment {
+  id             String             @id @default(cuid())
+  brandTenantId  String
+  officeId       String?
+  leadId         String
+  propertyId     String?
+  assignedUserId String?
+  status          AppointmentStatus @default(SET)
+  appointmentType String?
+  result          String?
+  cancelledReason String?
+  scheduledAt    DateTime
+  demoedAt       DateTime?
+  brandTenant    BrandTenant        @relation(fields: [brandTenantId], references: [id])
+  office         Office?            @relation(fields: [officeId], references: [id])
+  lead           Lead               @relation(fields: [leadId], references: [id])
+  property       Property?          @relation(fields: [propertyId], references: [id])
+  assignedUser   User?              @relation("AppointmentAssignee", fields: [assignedUserId], references: [id])
+  opportunities  Opportunity[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model Opportunity {
+  id             String           @id @default(cuid())
+  brandTenantId  String
+  officeId       String?
+  leadId         String
+  propertyId     String?
+  appointmentId  String?
+  ownerUserId    String?
+  stage          OpportunityStage @default(OPEN)
+  estimatedValue Decimal?         @db.Decimal(10, 2)
+  serviceType    String?
+  closeDate      DateTime?
+  lostReason     String?
+  brandTenant    BrandTenant      @relation(fields: [brandTenantId], references: [id])
+  office         Office?          @relation(fields: [officeId], references: [id])
+  lead           Lead             @relation(fields: [leadId], references: [id])
+  property       Property?        @relation(fields: [propertyId], references: [id])
+  appointment    Appointment?     @relation(fields: [appointmentId], references: [id])
+  owner          User?            @relation("OpportunityOwner", fields: [ownerUserId], references: [id])
+  jobs           Job[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Job {
+  id             String        @id @default(cuid())
+  brandTenantId  String
+  officeId       String?
+  opportunityId  String
+  propertyId     String?
+  ownerUserId    String?
+  status         JobStatus     @default(PENDING)
+  soldValue      Decimal?      @db.Decimal(10, 2)
+  jobType        String?
+  startDate      DateTime?
+  completedAt    DateTime?
+  brandTenant    BrandTenant   @relation(fields: [brandTenantId], references: [id])
+  office         Office?       @relation(fields: [officeId], references: [id])
+  opportunity    Opportunity   @relation(fields: [opportunityId], references: [id])
+  property       Property?     @relation(fields: [propertyId], references: [id])
+  owner          User?         @relation("JobOwner", fields: [ownerUserId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Activity {
+  id               String       @id @default(cuid())
+  brandTenantId    String
+  officeId         String?
+  userId           String
+  relatedEntityType String
+  relatedEntityId  String
+  activityType     ActivityType
+  subject          String?
+  body             String?
+  dueAt            DateTime?
+  completedAt      DateTime?
+  brandTenant      BrandTenant  @relation(fields: [brandTenantId], references: [id])
+  office           Office?      @relation(fields: [officeId], references: [id])
+  user             User         @relation(fields: [userId], references: [id])
+  createdAt        DateTime     @default(now())
+}
